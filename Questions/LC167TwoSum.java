@@ -1,7 +1,7 @@
 
 import java.util.Arrays;
 
-public class TwoSum {
+public class LC167TwoSum {
     public static void main(String[] args) {
         int[] arr = {-5, -2, 1, 3, 7, 9, 11};
         int target = 2;
