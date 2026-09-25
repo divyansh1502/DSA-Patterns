@@ -11,7 +11,7 @@ public class LC977SquaresOfSortedArray {
         int[] result = new int[arr.length];
         for (int k = arr.length - 1; k >= 0; k--) {
 
-            int left = arr[i] * arr[i];
+                int left = arr[i] * arr[i];
                 int right = arr[j] * arr[j];
                 if(left < right) {
                     result[k] = right;
