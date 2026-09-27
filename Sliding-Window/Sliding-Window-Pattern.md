@@ -1,4 +1,3 @@
-````md
 # 🪟 Sliding Window Patterns
 
 Sliding Window is a technique for solving problems involving **contiguous subarrays or substrings** by maintaining a range `[left, right]` and efficiently updating that range as it moves.
@@ -3147,4 +3146,4 @@ The most important question to ask yourself is:
 > **"What information can I carry from the previous window instead of calculating it again?"**
 
 That question is often what turns a brute-force solution into a Sliding Window solution.
-````
+
