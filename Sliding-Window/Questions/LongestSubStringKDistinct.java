@@ -3,7 +3,7 @@ import java.util.*;
 
 public class LongestSubStringKDistinct {
     public static void main(String[] args) {
-        System.out.println(longestSubString("aaabbcccddee", 2));
+        System.out.println(longestSubString("aaabbccdccddee", 2));
     }
     static int longestSubString(String s, int k) {
         Map<Character, Integer> map = new HashMap<>();
@@ -11,14 +11,12 @@ public class LongestSubStringKDistinct {
         int left = 0;
         int right = 0;
 
-        while(right < s.length()) {
-            char chr = s.charAt(right);
-            map.put(chr, map.getOrDefault(chr, 0) + 1);
-            while(map.size() > k) {
-                char chl = s.charAt(left);
-                map.put(chl, map.getOrDefault(chl, 0) - 1);
-                if(map.get(chl) == 0) {
-                    map.remove(chl);
+        while(right < s.length()) {     
+            map.put(s.charAt(right), map.getOrDefault(s.charAt(right), 0) + 1);
+            while(map.size() > k) {         
+                map.put(s.charAt(left), map.getOrDefault(s.charAt(left), 0) - 1);
+                if(map.get(s.charAt(left)) == 0) {
+                    map.remove(s.charAt(left));
                 }
                 left++;
             }
