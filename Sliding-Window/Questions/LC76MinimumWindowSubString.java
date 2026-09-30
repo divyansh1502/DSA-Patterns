@@ -3,13 +3,13 @@ import java.util.*;
 
 public class LC76MinimumWindowSubString {
     public static void main(String[] args) {
-        System.out.println(windowSubString("BBABAACB", "ABC"));
+        System.out.println(windowSubString("BBABAAC", "ABCB"));
         
     }
     static String windowSubString(String s, String t) {
         Map<Character, Integer> map = new HashMap<>();
         int left = 0;
-        int index1 = -1;
+        int startIndex = -1;
         int right = 0;
         int count = 0;
         int minLen = Integer.MAX_VALUE; 
@@ -30,7 +30,7 @@ public class LC76MinimumWindowSubString {
                 while(count == t.length()) {
                     if(right - left + 1 < minLen) {
                         minLen = right - left + 1;
-                        index1 = left;
+                        startIndex = left;
                     }
                     map.put(s.charAt(left), map.getOrDefault(s.charAt(left), 0) + 1);
 
@@ -41,6 +41,30 @@ public class LC76MinimumWindowSubString {
                 }
                 right++;
             }
-        return index1 == -1 ? "" : s.substring(index1, index1 + minLen);
+        return startIndex == -1 ? "" : s.substring(startIndex, startIndex + minLen);
     }
 }
+
+/*
+
+1. Count what t requires.
+
+2. Expand right.
+
+3. When a required character enters:
+       count++
+
+4. Decrease its requirement in map.
+
+5. When everything is satisfied:
+       record the window
+       remove from left
+
+6. If removing something makes a requirement missing:
+       count--
+
+7. Keep shrinking.
+
+8. Return the smallest recorded window.
+
+*/
