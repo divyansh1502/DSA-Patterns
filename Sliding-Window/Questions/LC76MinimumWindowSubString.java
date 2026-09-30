@@ -9,9 +9,9 @@ public class LC76MinimumWindowSubString {
     static String windowSubString(String s, String t) {
         Map<Character, Integer> map = new HashMap<>();
         int left = 0;
-        int startIndex = -1;
         int right = 0;
         int count = 0;
+        int startIndex = -1;
         int minLen = Integer.MAX_VALUE; 
 
         // Building Frequency Map
