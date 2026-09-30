@@ -1,5 +1,5 @@
 
-public class MinimumSizeSubarraySum {
+public class LC209MinimumSizeSubarraySum {
     public static void main(String[] args) {
         int[] arr = {2,3,1,2,4,3};
         System.out.println(minSubArrayLen(arr, 7));

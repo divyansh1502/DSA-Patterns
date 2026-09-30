@@ -1,6 +1,6 @@
 import java.util.*;
 
-public class LongestSubStringWithoutRepeatingCharacter {
+public class LC03LongestSubStringWithoutRepeatingCharacter {
     public static void main(String[] args) {
         System.out.println(longestSubString("abcadefb"));
     }

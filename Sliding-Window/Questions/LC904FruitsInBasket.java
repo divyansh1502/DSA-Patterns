@@ -1,6 +1,6 @@
 import java.util.*;
 
-public class FruitsInBasket {
+public class LC904FruitsInBasket {
     public static void main(String[] args) {
         int[] fruits = {1, 1, 1, 2, 2, 4, 4, 4, 4, 6, 3, 2};
         System.out.println(totalFruits(fruits));

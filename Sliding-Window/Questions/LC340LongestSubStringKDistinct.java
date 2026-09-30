@@ -1,7 +1,7 @@
 
 import java.util.*;
 
-public class LongestSubStringKDistinct {
+public class LC340LongestSubStringKDistinct {
     public static void main(String[] args) {
         System.out.println(longestSubString("aaabbccdccddee", 2));
     }

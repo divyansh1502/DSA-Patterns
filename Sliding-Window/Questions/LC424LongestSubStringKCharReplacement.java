@@ -1,4 +1,4 @@
-public class LongestSubStringKCharReplacement {
+public class LC424LongestSubStringKCharReplacement {
     public static void main(String[] args) {
         System.out.println(characterReplacement("AABABBBCCBBBD", 2));
     }
