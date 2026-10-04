@@ -1,8 +1,8 @@
 
 public class LC209MinimumSizeSubarraySum {
     public static void main(String[] args) {
-        int[] arr = {2,3,1,2,4,3};
-        System.out.println(minSubArrayLen(arr, 7));
+        int[] arr = {2,3,2,2,4,3};
+        System.out.println(minSubArrayLen(arr, 0));
     }
     static int minSubArrayLen(int[] arr, int target) {
         int left = 0;
