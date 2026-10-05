@@ -1,232 +1,481 @@
-# 🎯 Kadane's Algorithm in Java — Complete DSA Guide
+# <img src="https://api.iconify.design/lucide/zap.svg?color=%23fbbf24" width="30" /> Kadane's Algorithm in Java — Complete DSA Guide
 
-> **Goal:** Learn how to recognize, think about, implement, debug, and
-> extend **Kadane's Algorithm** in Java for LeetCode and GeeksforGeeks problems.
-
----
-
-## 📌 Table of Contents
-
-1. [What Is Kadane's Algorithm?](#-what-is-kadanes-algorithm)
-2. [Why Kadane?](#-why-kadane)
-3. [Core Mental Model](#-core-mental-model)
-4. [The Recurrence](#-the-recurrence)
-5. [When to Think of Kadane](#-when-to-think-of-kadane)
-6. [When NOT to Think of Kadane](#-when-not-to-think-of-kadane)
-7. [Dry Run](#-dry-run)
-8. [Canonical Java Template](#-canonical-java-template)
-9. [Variation 1 — Return Start & End Indices](#-variation-1--return-start--end-indices)
-10. [Variation 2 — All Negative Numbers](#-variation-2--all-negative-numbers)
-11. [Variation 3 — Maximum Circular Subarray](#-variation-3--maximum-circular-subarray)
-12. [Variation 4 — Maximum Product Subarray](#-variation-4--maximum-product-subarray)
-13. [Variation 5 — Stock Buy/Sell as Kadane](#-variation-5--stock-buysell-as-kadane)
-14. [Variation 6 — Minimum Subarray Sum](#-variation-6--minimum-subarray-sum)
-15. [Kadane vs Sliding Window vs Two Pointers](#-kadane-vs-sliding-window-vs-two-pointers)
-16. [How to Approach a LeetCode/GFG Problem](#-how-to-approach-a-leetcodegfg-problem)
-17. [Brute Force vs Kadane](#-brute-force-vs-kadane)
-18. [Time and Space Complexity](#-time-and-space-complexity)
-19. [Common Mistakes](#-common-mistakes)
-20. [Edge Cases Checklist](#-edge-cases-checklist)
-21. [Practice Roadmap](#-practice-roadmap)
-22. [Problem-Solving Checklist](#-problem-solving-checklist)
-23. [Interview 30-Second Answer](#-interview-30-second-answer)
-24. [Cheat Sheet](#-kadane-cheat-sheet)
+> **Goal:** Build the intuition to recognize maximum-subarray problems, understand why Kadane's Algorithm works, implement it confidently in Java, and explain it clearly in an interview.
 
 ---
 
-# 🧠 What Is Kadane's Algorithm?
+## Table of Contents
 
-**Kadane's Algorithm** finds the **maximum sum of a contiguous subarray** in a single pass.
-
-Example:
-
-```text
-nums = [-2, 1, -3, 4, -1, 2, 1, -5, 4]
-
-Best subarray → [4, -1, 2, 1]
-Sum           → 6
-```
-
-The key idea:
-
-> **At every index, decide: extend the previous subarray, or start fresh here?**
-
-> 💡 **Tip:** Kadane is really a **1D Dynamic Programming** idea with O(1) space.
-> You only need the previous state, so no DP array is required.
-
----
-
-# 🚀 Why Kadane?
-
-Brute force checks every subarray:
-
-```text
-(0,0) (0,1) (0,2) ... (0,n-1)
-(1,1) (1,2) ...
-...
-```
-
-That is **O(n²)** with a running sum, or **O(n³)** if you re-sum each time.
-
-Kadane reduces this to:
-
-```text
-O(n³) → O(n²) → O(n)
-```
-
-> 🔥 **Important:** The speed-up comes from realizing that a *negative-sum prefix*
-> can never help a future subarray, so we can drop it immediately.
+1. [What Is Kadane's Algorithm?](#1-what-is-kadanes-algorithm)
+2. [The Problem Kadane Solves](#2-the-problem-kadane-solves)
+3. [Why Brute Force Is Not Enough](#3-why-brute-force-is-not-enough)
+4. [Core Mental Model](#4-core-mental-model)
+5. [The Main Insight](#5-the-main-insight)
+6. [Deriving Kadane's Algorithm](#6-deriving-kadanes-algorithm)
+7. [The Two Important Variables](#7-the-two-important-variables)
+8. [Step-by-Step Dry Run](#8-step-by-step-dry-run)
+9. [Java Implementation](#9-java-implementation)
+10. [Why Do We Reset the Current Sum?](#10-why-do-we-reset-the-current-sum)
+11. [Why Does `maxSum` Come After Updating `currentSum`?](#11-why-does-maxsum-come-after-updating-currentsum)
+12. [All-Negative Arrays](#12-all-negative-arrays)
+13. [Finding the Actual Subarray](#13-finding-the-actual-subarray)
+14. [How to Recognize Kadane's Algorithm](#14-how-to-recognize-kadanes-algorithm)
+15. [When NOT to Use Kadane's Algorithm](#15-when-not-to-use-kadanes-algorithm)
+16. [Common Variations](#16-common-variations)
+17. [Common Mistakes](#17-common-mistakes)
+18. [Edge Cases](#18-edge-cases)
+19. [Complexity Analysis](#19-complexity-analysis)
+20. [Problem-Solving Process](#20-problem-solving-process)
+21. [Top 10 Interview Questions](#21-top-10-interview-questions)
+22. [30-Second Interview Answer](#22-30-second-interview-answer)
+23. [Cheat Sheet](#23-cheat-sheet)
+24. [Practice Roadmap](#24-practice-roadmap)
+25. [Final Mental Model](#25-final-mental-model)
 
 ---
 
-# 🧠 Core Mental Model
+## 1. What Is Kadane's Algorithm?
 
-Walk left to right. At each index `i`, keep **one number**:
+Kadane's Algorithm is a **dynamic programming / greedy-style algorithm** used to find the **maximum sum of a contiguous subarray** in an array.
 
-```text
-currentSum = best sum of a subarray that ENDS exactly at i
-```
-
-And a second number:
+For example:
 
 ```text
-maxSum = best answer seen anywhere so far
+[-2, 1, -3, 4, -1, 2, 1, -5, 4]
 ```
 
-Now the decision at each element `x = nums[i]`:
+The maximum-sum contiguous subarray is:
 
 ```text
-┌─────────────────────────────────────────────┐
-│  Option A: extend  → currentSum + x         │
-│  Option B: restart → x                      │
-│                                             │
-│  currentSum = max(A, B)                     │
-└─────────────────────────────────────────────┘
+[4, -1, 2, 1]
 ```
 
-**Why restart?**
-If `currentSum` (the sum before `x`) is **negative**, attaching it to `x` only makes things worse.
-A negative baggage is dead weight, so throw it away.
+Its sum is:
 
-> 💡 **Tip:** Think of it as carrying a backpack. If the backpack is **heavy with debt**
-> (negative sum), drop it and start fresh.
+```text
+4 + (-1) + 2 + 1 = 6
+```
+
+Therefore:
+
+```text
+Maximum subarray sum = 6
+```
+
+<table>
+<tr>
+<td width="42"><img src="https://api.iconify.design/lucide/lightbulb.svg?color=%23fbbf24" width="24"></td>
+<td><b>Core Definition</b><br>
+Kadane's Algorithm keeps the best subarray ending at the current position and uses it to build the answer for the next position.
+</td>
+</tr>
+</table>
 
 ---
 
-# 📐 The Recurrence
+## 2. The Problem Kadane Solves
+
+The classic problem is:
+
+> Given an integer array, find the contiguous subarray having the largest sum and return that sum.
+
+### Example
 
 ```text
-dp[i] = max(nums[i], dp[i-1] + nums[i])
+Input:
+[-2,1,-3,4,-1,2,1,-5,4]
 
-answer = max(dp[i]) over all i
+Output:
+6
 ```
 
-Equivalent form:
+Because:
 
 ```text
-if (currentSum < 0) currentSum = 0;   // drop negative baggage
-currentSum += nums[i];
+[4,-1,2,1] → 6
 ```
 
-> ⚠️ **Warning:** The "reset to 0" form is **not safe** when all numbers are negative
-> (see [Variation 2](#-variation-2--all-negative-numbers)).
-> The `max(nums[i], currentSum + nums[i])` form is always correct. **Prefer it.**
+### Important Word: Contiguous
+
+Contiguous means the elements must be next to each other.
+
+Valid:
+
+```text
+[4,-1,2,1]
+```
+
+Invalid:
+
+```text
+[4,2,1]
+```
+
+because `-1` was skipped.
+
+<table>
+<tr>
+<td width="42"><img src="https://api.iconify.design/lucide/triangle-alert.svg?color=%23ef4444" width="24"></td>
+<td><b>WARNING</b><br>
+Kadane's Algorithm is about <b>contiguous</b> subarrays. It is not the same as finding the maximum sum subsequence.
+</td>
+</tr>
+</table>
 
 ---
 
-# 🔎 When to Think of Kadane
+## 3. Why Brute Force Is Not Enough
 
-## Signal 1 — "Maximum/Minimum sum subarray"
+Suppose we try every possible subarray.
+
+For:
+
 ```text
-"largest sum contiguous subarray"
-"maximum subarray"
-"best contiguous segment"
+[1,2,3,4]
 ```
 
-## Signal 2 — Contiguity + optimization + negatives allowed
+Possible subarrays include:
+
 ```text
-contiguous  ✔
-sum/product ✔
-negatives   ✔   ← very strong signal
+[1]
+[1,2]
+[1,2,3]
+[1,2,3,4]
+
+[2]
+[2,3]
+[2,3,4]
+
+[3]
+[3,4]
+
+[4]
 ```
 
-## Signal 3 — "Best ending here" can be defined
-If you can say *"the best answer ending at index i depends only on the best ending at i-1"*,
-Kadane-style DP applies.
+There are approximately:
 
-## Signal 4 — Disguised problems
 ```text
-Stock buy/sell (single transaction) → Kadane on price differences
-Max absolute subarray sum           → Kadane for max AND min
-Circular array max sum              → Kadane + total - min Kadane
-Max product subarray                → Kadane tracking max AND min
+n(n+1)/2
 ```
 
-> 🔥 **Hot take:** If a problem says *contiguous* and has *negatives*, think Kadane **before** thinking sliding window.
+subarrays.
+
+A straightforward solution can therefore become:
+
+```text
+O(n²)
+```
+
+or even:
+
+```text
+O(n³)
+```
+
+if we calculate each subarray's sum from scratch.
+
+Kadane reduces the problem to:
+
+```text
+O(n)
+```
 
 ---
 
-# 🚫 When NOT to Think of Kadane
+## 4. Core Mental Model
 
-### 1. Subsequence (non-contiguous) problems
-Kadane needs the elements to be **adjacent**.
+This is the most important part.
 
-### 2. Fixed-size window
+While traversing the array, ask:
+
+> **"What is the maximum sum of a subarray that ends exactly at this index?"**
+
+For every element, there are only two meaningful choices:
+
+### Choice 1 — Start a new subarray
+
 ```text
-"max sum of subarray of size K"
+currentSum = current element
 ```
-This is a **sliding window**, not Kadane.
 
-### 3. Count of subarrays with sum = K
-That is **prefix sum + HashMap**.
+### Choice 2 — Extend the previous subarray
 
-### 4. Constraints like "length at least K" or "at most K elements"
-Needs modification (prefix sums, deque), plain Kadane is not enough.
+```text
+currentSum = previous currentSum + current element
+```
 
-### 5. You can't define "best ending at i"
-If the state depends on more than the previous value, you may need full DP.
+Therefore:
+
+```text
+currentSum = max(nums[i], currentSum + nums[i])
+```
+
+That single decision is the heart of Kadane's Algorithm.
+
+<table>
+<tr>
+<td width="42"><img src="https://api.iconify.design/lucide/flame.svg?color=%23f97316" width="24"></td>
+<td><b>CORE INSIGHT</b><br>
+At every element, ask: <b>"Is my previous subarray helping me, or is it hurting me?"</b>
+</td>
+</tr>
+</table>
 
 ---
 
-# 🧪 Dry Run
+## 5. The Main Insight
+
+Suppose:
 
 ```text
-nums = [-2, 1, -3, 4, -1, 2, 1, -5, 4]
+currentSum = -5
 ```
 
-| i | nums[i] | extend (cur+x) | restart (x) | currentSum | maxSum |
-|---|---------|----------------|-------------|------------|--------|
-| 0 | -2      | —              | -2          | -2         | -2     |
-| 1 | 1       | -1             | 1           | **1**      | 1      |
-| 2 | -3      | -2             | -3          | -2         | 1      |
-| 3 | 4       | 2              | 4           | **4**      | 4      |
-| 4 | -1      | 3              | -1          | 3          | 4      |
-| 5 | 2       | 5              | 2           | 5          | 5      |
-| 6 | 1       | 6              | 1           | 6          | **6**  |
-| 7 | -5      | 1              | -5          | 1          | 6      |
-| 8 | 4       | 5              | 4           | 5          | 6      |
+and the next number is:
 
 ```text
-Answer = 6   →   subarray [4, -1, 2, 1]
+10
 ```
 
-> 💡 **Tip:** Notice at `i = 1` and `i = 3` the algorithm **restarted** because the previous sum was negative.
-> That is the whole trick.
+We have two choices:
+
+```text
+Continue:
+-5 + 10 = 5
+
+Start fresh:
+10
+```
+
+Obviously:
+
+```text
+10 > 5
+```
+
+So we throw away the previous negative contribution.
+
+This gives:
+
+```java
+currentSum = Math.max(nums[i], currentSum + nums[i]);
+```
+
+### The important idea
+
+A negative previous sum can only make the future sum smaller.
+
+Therefore:
+
+```text
+negative contribution → discard it
+positive contribution → keep it
+```
 
 ---
 
-# 💻 Canonical Java Template
+## 6. Deriving Kadane's Algorithm
 
-## ✅ LeetCode 53 — Maximum Subarray
+Let's derive it instead of memorizing it.
+
+Suppose:
+
+```text
+nums = [-2, 1, -3, 4]
+```
+
+Start:
+
+```text
+currentSum = -2
+maxSum = -2
+```
+
+Now encounter `1`.
+
+Two possibilities:
+
+```text
+Start new:
+1
+
+Extend:
+-2 + 1 = -1
+```
+
+Choose:
+
+```text
+1
+```
+
+Now:
+
+```text
+currentSum = 1
+maxSum = 1
+```
+
+Next:
+
+```text
+-3
+```
+
+Choices:
+
+```text
+Start new:
+-3
+
+Extend:
+1 + (-3) = -2
+```
+
+Choose:
+
+```text
+-2
+```
+
+But the global maximum is still:
+
+```text
+1
+```
+
+Next:
+
+```text
+4
+```
+
+Choices:
+
+```text
+Start:
+4
+
+Extend:
+-2 + 4 = 2
+```
+
+Choose:
+
+```text
+4
+```
+
+Now:
+
+```text
+currentSum = 4
+maxSum = 4
+```
+
+So the recurrence becomes:
+
+```java
+currentSum = Math.max(nums[i], currentSum + nums[i]);
+maxSum = Math.max(maxSum, currentSum);
+```
+
+---
+
+## 7. The Two Important Variables
+
+Kadane becomes extremely easy once these two variables are separated mentally.
+
+### `currentSum`
+
+Represents:
+
+> Maximum sum of a subarray that **must end at the current index**.
+
+### `maxSum`
+
+Represents:
+
+> Maximum sum found **anywhere so far**.
+
+Think:
+
+```text
+currentSum → local best
+maxSum     → global best
+```
+
+<table>
+<tr>
+<td width="42"><img src="https://api.iconify.design/lucide/target.svg?color=%2360a5fa" width="24"></td>
+<td><b>MEMORY TRICK</b><br>
+<code>currentSum</code> asks: "What is best ending here?"<br>
+<code>maxSum</code> asks: "What is best overall?"
+</td>
+</tr>
+</table>
+
+---
+
+## 8. Step-by-Step Dry Run
+
+Consider:
+
+```text
+[-2, 1, -3, 4, -1, 2, 1, -5, 4]
+```
+
+Initialize:
+
+```text
+currentSum = -2
+maxSum = -2
+```
+
+Now process each element.
+
+| i | num | currentSum | maxSum |
+| - | --: | ---------: | -----: |
+| 0 |  -2 |         -2 |     -2 |
+| 1 |   1 |          1 |      1 |
+| 2 |  -3 |         -2 |      1 |
+| 3 |   4 |          4 |      4 |
+| 4 |  -1 |          3 |      4 |
+| 5 |   2 |          5 |      5 |
+| 6 |   1 |          6 |      6 |
+| 7 |  -5 |          1 |      6 |
+| 8 |   4 |          5 |      6 |
+
+Final answer:
+
+```text
+6
+```
+
+The winning subarray is:
+
+```text
+[4, -1, 2, 1]
+```
+
+---
+
+## 9. Java Implementation
+
+### Basic Kadane
 
 ```java
 class Solution {
     public int maxSubArray(int[] nums) {
+
         int currentSum = nums[0];
         int maxSum = nums[0];
 
         for (int i = 1; i < nums.length; i++) {
-            currentSum = Math.max(nums[i], currentSum + nums[i]);
+
+            currentSum = Math.max(nums[i],
+                                  currentSum + nums[i]);
+
             maxSum = Math.max(maxSum, currentSum);
         }
 
@@ -235,43 +484,255 @@ class Solution {
 }
 ```
 
-### Why initialize with `nums[0]` and not `0`?
-
-```text
-If all numbers are negative, e.g. [-3, -1, -2],
-initializing with 0 would wrongly return 0.
-The true answer is -1.
-```
-
-### Complexity
-```text
-Time:  O(n)
-Space: O(1)
-```
-
-> 🔥 **Memorize this one.** It is the base for every variation below.
-
----
-
-# 🧩 Variation 1 — Return Start & End Indices
-
-Many interview/GFG problems ask for the **actual subarray**.
+### Short Version
 
 ```java
 class Solution {
-    public int[] maxSubArrayIndices(int[] nums) {
+    public int maxSubArray(int[] nums) {
+
+        int current = nums[0];
+        int max = nums[0];
+
+        for (int i = 1; i < nums.length; i++) {
+            current = Math.max(nums[i], current + nums[i]);
+            max = Math.max(max, current);
+        }
+
+        return max;
+    }
+}
+```
+
+### Why initialize with `nums[0]`?
+
+Because the array can contain only negative numbers.
+
+For example:
+
+```text
+[-5,-2,-8]
+```
+
+The answer is:
+
+```text
+-2
+```
+
+If we initialized:
+
+```java
+maxSum = 0;
+```
+
+we would incorrectly return:
+
+```text
+0
+```
+
+---
+
+## 10. Why Do We Reset the Current Sum?
+
+This is the most common conceptual question.
+
+Suppose:
+
+```text
+currentSum = -7
+```
+
+and:
+
+```text
+nums[i] = 5
+```
+
+Compare:
+
+```text
+currentSum + nums[i]
+= -7 + 5
+= -2
+```
+
+versus:
+
+```text
+nums[i]
+= 5
+```
+
+Clearly:
+
+```text
+5 > -2
+```
+
+Therefore:
+
+```java
+currentSum = Math.max(nums[i], currentSum + nums[i]);
+```
+
+The previous subarray is abandoned.
+
+### Why?
+
+Because a negative prefix can never improve the sum of a future subarray.
+
+For example:
+
+```text
+[-10, 5, 6]
+```
+
+If we keep `-10`:
+
+```text
+-10 + 5 + 6 = 1
+```
+
+If we discard it:
+
+```text
+5 + 6 = 11
+```
+
+So:
+
+```text
+negative prefix → liability
+positive prefix → asset
+```
+
+---
+
+## 11. Why Does `maxSum` Come After Updating `currentSum`?
+
+Correct:
+
+```java
+currentSum = Math.max(nums[i], currentSum + nums[i]);
+maxSum = Math.max(maxSum, currentSum);
+```
+
+Because `maxSum` must compare against the **best subarray ending at the current index**.
+
+For example:
+
+```text
+currentSum = 5
+nums[i] = 4
+```
+
+After processing:
+
+```text
+currentSum = 9
+```
+
+Only then should we check:
+
+```text
+maxSum = max(maxSum, 9)
+```
+
+So the order matters.
+
+---
+
+## 12. All-Negative Arrays
+
+Consider:
+
+```text
+[-8, -3, -6, -2, -5, -4]
+```
+
+The maximum subarray is:
+
+```text
+[-2]
+```
+
+Answer:
+
+```text
+-2
+```
+
+Kadane handles this naturally.
+
+```java
+int currentSum = nums[0];
+int maxSum = nums[0];
+```
+
+Then:
+
+```text
+-8
+-3
+-6
+-2
+-5
+-4
+```
+
+The largest value encountered is:
+
+```text
+-2
+```
+
+<table>
+<tr>
+<td width="42"><img src="https://api.iconify.design/lucide/triangle-alert.svg?color=%23ef4444" width="24"></td>
+<td><b>COMMON BUG</b><br>
+Do not initialize <code>maxSum</code> to <code>0</code> unless the problem explicitly allows an empty subarray.
+</td>
+</tr>
+</table>
+
+---
+
+## 13. Finding the Actual Subarray
+
+Sometimes the question asks for the maximum sum.
+
+Sometimes it asks for the actual subarray.
+
+For that, maintain:
+
+```text
+start
+end
+tempStart
+```
+
+### Java
+
+```java
+class Solution {
+
+    public int maxSubArray(int[] nums) {
+
         int currentSum = nums[0];
         int maxSum = nums[0];
 
-        int start = 0, end = 0, tempStart = 0;
+        int start = 0;
+        int end = 0;
+        int tempStart = 0;
 
         for (int i = 1; i < nums.length; i++) {
 
             if (nums[i] > currentSum + nums[i]) {
-                currentSum = nums[i];   // restart
+                currentSum = nums[i];
                 tempStart = i;
             } else {
-                currentSum += nums[i];  // extend
+                currentSum += nums[i];
             }
 
             if (currentSum > maxSum) {
@@ -281,521 +742,821 @@ class Solution {
             }
         }
 
-        return new int[]{start, end, maxSum};
+        System.out.println("Start: " + start);
+        System.out.println("End: " + end);
+
+        return maxSum;
     }
 }
 ```
 
-### Thinking
+For:
+
 ```text
-tempStart → where the CURRENT running subarray began
-start/end → where the BEST subarray began/ended
+[-2,1,-3,4,-1,2,1,-5,4]
 ```
 
-> ⚠️ **Mistake alert:** Don't update `start` at the moment of restarting.
-> Update `tempStart` on restart, and copy to `start` **only when a new best is found**.
+we get:
+
+```text
+start = 3
+end = 6
+```
+
+Therefore:
+
+```text
+[4,-1,2,1]
+```
 
 ---
 
-# 🧩 Variation 2 — All Negative Numbers
+## 14. How to Recognize Kadane's Algorithm
+
+Look for these signals.
+
+### Signal 1 — Maximum Sum
+
+Words like:
 
 ```text
-nums = [-5, -2, -8]
-Expected answer = -2   (NOT 0)
+maximum sum
+largest sum
+maximum possible sum
+highest sum
 ```
 
-### ❌ Wrong version
-```java
-int cur = 0, max = 0;          // max = 0 is the bug
-for (int x : nums) {
-    cur = Math.max(0, cur + x);
-    max = Math.max(max, cur);
-}
-return max;                    // returns 0 ❌
+### Signal 2 — Contiguous
+
+The problem explicitly says:
+
+```text
+subarray
+contiguous
+continuous segment
+consecutive elements
 ```
 
-### ✅ Correct version
-```java
-int cur = nums[0], max = nums[0];
-for (int i = 1; i < nums.length; i++) {
-    cur = Math.max(nums[i], cur + nums[i]);
-    max = Math.max(max, cur);
-}
-return max;
+### Signal 3 — One-Dimensional Array
+
+Typical form:
+
+```text
+Given an integer array...
+find the contiguous subarray...
+having the maximum sum.
 ```
 
-> ⚠️ **Warning:** The "empty subarray allowed → answer ≥ 0" version is a **different problem**.
-> Always read whether an empty subarray is permitted.
+### Signal 4 — O(n) Expected
+
+If brute force is O(n²) and the expected solution is O(n), Kadane should immediately come to mind.
+
+<table>
+<tr>
+<td width="42"><img src="https://api.iconify.design/lucide/search.svg?color=%2360a5fa" width="24"></td>
+<td><b>RECOGNITION PATTERN</b><br>
+<b>Maximum + Sum + Contiguous Subarray</b> → Think <b>Kadane</b>.
+</td>
+</tr>
+</table>
 
 ---
 
-# 🧩 Variation 3 — Maximum Circular Subarray
+## 15. When NOT to Use Kadane's Algorithm
 
-**LeetCode 918 — Maximum Sum Circular Subarray**
+Kadane is not a universal array algorithm.
 
-```text
-nums = [5, -3, 5]
-Circular best = 5 + 5 = 10   (wraps around)
-```
+Do not automatically use it when you see the word "maximum."
 
-## Core idea
-
-A circular best subarray is either:
+### Not Kadane:
 
 ```text
-Case 1: Normal subarray (no wrap)       → regular Kadane
-Case 2: Wrapping subarray               → total − (minimum subarray)
+Maximum product subarray
 ```
 
-Why Case 2? A wrapping subarray = **everything except a middle chunk**.
-To maximize what remains, **minimize the removed middle chunk**.
+This requires tracking:
 
 ```text
-answer = max( maxKadane , totalSum − minKadane )
+maximum product
+minimum product
 ```
 
-## Special case 🔥
+because a negative number can turn a minimum into a maximum.
 
-If **all numbers are negative**, `maxKadane < 0`.
-Then `totalSum − minKadane` would be `0` (empty subarray), which is invalid.
+### Not Kadane:
 
 ```text
-if (maxKadane < 0) return maxKadane;
+Maximum sum subsequence
 ```
 
-## Java
+because elements do not necessarily need to be contiguous.
+
+### Not automatically Kadane:
+
+```text
+Maximum sum with exactly K elements
+```
+
+This may require a sliding window.
+
+### Not automatically Kadane:
+
+```text
+Maximum sum subarray of size K
+```
+
+This is typically:
+
+```text
+Sliding Window
+```
+
+<table>
+<tr>
+<td width="42"><img src="https://api.iconify.design/lucide/triangle-alert.svg?color=%23ef4444" width="24"></td>
+<td><b>DO NOT PATTERN-MATCH BLINDLY</b><br>
+"Maximum" alone does not mean Kadane. Check whether you are finding the best <b>contiguous sum</b>.
+</td>
+</tr>
+</table>
+
+---
+
+## 16. Common Variations
+
+### 16.1 Maximum Subarray
+
+Classic Kadane:
+
+```text
+Maximum sum
++
+Contiguous subarray
+```
+
+---
+
+### 16.2 Maximum Circular Subarray
+
+Example:
+
+```text
+[5,-3,5]
+```
+
+Normal maximum:
+
+```text
+7
+```
+
+Circular maximum:
+
+```text
+5 + 5 = 10
+```
+
+A common approach uses:
+
+```text
+max(normal Kadane,
+    totalSum - minimumSubarraySum)
+```
+
+with the important all-negative edge case.
+
+---
+
+### 16.3 Minimum Subarray
+
+Kadane's idea can be inverted.
+
+Instead of:
+
+```java
+Math.max(...)
+```
+
+use:
+
+```java
+Math.min(...)
+```
+
+Conceptually:
+
+```text
+maximum subarray → keep the best positive contribution
+
+minimum subarray → keep the best negative contribution
+```
+
+---
+
+### 16.4 Maximum Product Subarray
+
+This is **not standard Kadane**.
+
+Because:
+
+```text
+negative × negative = positive
+```
+
+you need both:
+
+```text
+currentMax
+currentMin
+```
+
+So don't blindly apply the sum version.
+
+---
+
+## 17. Common Mistakes
+
+### Mistake 1 — Initializing `maxSum` to zero
+
+Wrong for all-negative arrays:
+
+```java
+int maxSum = 0;
+```
+
+Better:
+
+```java
+int maxSum = nums[0];
+```
+
+---
+
+### Mistake 2 — Using only `currentSum`
+
+Wrong:
+
+```java
+currentSum = Math.max(nums[i], currentSum + nums[i]);
+
+return currentSum;
+```
+
+The final `currentSum` is only the best subarray **ending at the final index**.
+
+We need the global maximum:
+
+```java
+maxSum
+```
+
+---
+
+### Mistake 3 — Forgetting contiguity
+
+Kadane works with:
+
+```text
+subarray
+```
+
+not arbitrary:
+
+```text
+subsequence
+```
+
+---
+
+### Mistake 4 — Resetting whenever sum becomes zero
+
+Do not write:
+
+```java
+if (currentSum < 0)
+    currentSum = 0;
+```
+
+without understanding the problem's empty-subarray convention.
+
+The safer general form for the classic problem is:
+
+```java
+currentSum = Math.max(nums[i],
+                      currentSum + nums[i]);
+```
+
+---
+
+### Mistake 5 — Confusing maximum sum with maximum product
+
+They are different patterns.
+
+```text
+Maximum Sum     → Kadane
+Maximum Product → track max + min
+```
+
+---
+
+## 18. Edge Cases
+
+### One Element
+
+```text
+[5]
+```
+
+Answer:
+
+```text
+5
+```
+
+---
+
+### One Negative Element
+
+```text
+[-5]
+```
+
+Answer:
+
+```text
+-5
+```
+
+---
+
+### All Negative
+
+```text
+[-5,-2,-8]
+```
+
+Answer:
+
+```text
+-2
+```
+
+---
+
+### All Positive
+
+```text
+[1,2,3,4]
+```
+
+Answer:
+
+```text
+10
+```
+
+---
+
+### Zeros
+
+```text
+[0,0,0]
+```
+
+Answer:
+
+```text
+0
+```
+
+---
+
+### Mixed Values
+
+```text
+[-2,1,-3,4,-1,2,1,-5,4]
+```
+
+Answer:
+
+```text
+6
+```
+
+---
+
+## 19. Complexity Analysis
+
+Kadane scans the array exactly once.
+
+### Time
+
+```text
+O(n)
+```
+
+### Space
+
+```text
+O(1)
+```
+
+Only a few variables are required.
+
+<table>
+<tr>
+<td width="42"><img src="https://api.iconify.design/lucide/gauge.svg?color=%2322c55e" width="24"></td>
+<td><b>COMPLEXITY</b><br>
+Time: <b>O(n)</b> &nbsp; | &nbsp; Space: <b>O(1)</b>
+</td>
+</tr>
+</table>
+
+---
+
+## 20. Problem-Solving Process
+
+When you encounter a new problem, don't immediately type Kadane's code.
+
+Use this process.
+
+### Step 1 — Identify the object
+
+Ask:
+
+```text
+Am I working with an array?
+```
+
+### Step 2 — Identify the target
+
+Ask:
+
+```text
+Am I maximizing or minimizing a sum?
+```
+
+### Step 3 — Check continuity
+
+Ask:
+
+```text
+Does the subarray need to be contiguous?
+```
+
+### Step 4 — Think locally
+
+Ask:
+
+```text
+What is the best subarray ending at this index?
+```
+
+### Step 5 — Make the choice
+
+```text
+Start fresh
+OR
+Extend previous subarray
+```
+
+### Step 6 — Track the global answer
+
+```text
+currentSum → local answer
+maxSum     → global answer
+```
+
+### Step 7 — Check edge cases
+
+Especially:
+
+```text
+all negative
+single element
+zeros
+```
+
+---
+
+## 21. Top 10 Interview Questions
+
+### Q1. What is Kadane's Algorithm?
+
+Kadane's Algorithm finds the maximum sum of a contiguous subarray in O(n) time and O(1) space.
+
+---
+
+### Q2. What is the core recurrence?
+
+```java
+currentSum = Math.max(nums[i],
+                      currentSum + nums[i]);
+```
+
+---
+
+### Q3. Why do we discard a negative prefix?
+
+Because adding a negative sum to a future subarray can only decrease that future sum.
+
+---
+
+### Q4. Why do we need `maxSum`?
+
+Because `currentSum` only represents the best subarray ending at the current position.
+
+`maxSum` stores the best result found anywhere.
+
+---
+
+### Q5. What is the time complexity?
+
+```text
+O(n)
+```
+
+---
+
+### Q6. What is the space complexity?
+
+```text
+O(1)
+```
+
+---
+
+### Q7. Does Kadane work with all-negative arrays?
+
+Yes, if initialized correctly:
+
+```java
+currentSum = nums[0];
+maxSum = nums[0];
+```
+
+---
+
+### Q8. What is the difference between a subarray and subsequence?
+
+A subarray must contain contiguous elements.
+
+A subsequence does not necessarily have to be contiguous.
+
+---
+
+### Q9. Can Kadane find the actual subarray?
+
+Yes. Maintain starting and ending indices while processing the array.
+
+---
+
+### Q10. Is maximum product subarray the same as Kadane?
+
+No.
+
+Maximum product requires tracking both the current maximum and current minimum because negative values can reverse their roles.
+
+---
+
+## 22. 30-Second Interview Answer
+
+> "Kadane's Algorithm is used to find the maximum sum of a contiguous subarray in O(n) time and O(1) space. I maintain two variables: `currentSum`, which represents the maximum sum of a subarray ending at the current index, and `maxSum`, which stores the global maximum. For every element, I decide whether to start a new subarray with that element or extend the previous one using `Math.max(nums[i], currentSum + nums[i])`. Then I update `maxSum`. This works because a negative previous sum can only reduce the sum of any subarray that follows it."
+
+---
+
+## 23. Cheat Sheet
+
+### Recognition
+
+```text
+Maximum
++
+Sum
++
+Contiguous Subarray
+=
+Kadane
+```
+
+### Core Formula
+
+```java
+currentSum = Math.max(nums[i],
+                      currentSum + nums[i]);
+```
+
+### Global Answer
+
+```java
+maxSum = Math.max(maxSum, currentSum);
+```
+
+### Initialization
+
+```java
+int currentSum = nums[0];
+int maxSum = nums[0];
+```
+
+### Complexity
+
+```text
+Time  → O(n)
+Space → O(1)
+```
+
+### Mental Rule
+
+```text
+Previous sum negative?
+→ Drop it.
+
+Previous sum positive?
+→ Consider extending it.
+```
+
+---
+
+## 24. Practice Roadmap
+
+### Level 1 — Classic
+
+**LeetCode 53 — Maximum Subarray**
+
+Focus on:
+
+```text
+currentSum
+maxSum
+```
+
+---
+
+### Level 2 — Actual Indices
+
+Modify Kadane to return:
+
+```text
+start index
+end index
+maximum sum
+```
+
+---
+
+### Level 3 — Minimum Subarray
+
+Reverse the comparison:
+
+```java
+Math.min(...)
+```
+
+---
+
+### Level 4 — Maximum Circular Subarray
+
+Learn:
+
+```text
+Normal Kadane
++
+Minimum Kadane
++
+Total Sum
+```
+
+---
+
+### Level 5 — Maximum Product Subarray
+
+Move beyond simple Kadane and learn why:
+
+```text
+currentMax
+currentMin
+```
+
+are both required.
+
+---
+
+## 25. Final Mental Model
+
+Don't memorize this:
+
+```java
+current = Math.max(nums[i], current + nums[i]);
+```
+
+Understand this:
+
+```text
+I have a previous subarray.
+
+Is its contribution useful?
+
+        YES
+         ↓
+     Extend it
+
+        NO
+         ↓
+    Start fresh
+```
+
+Then separately ask:
+
+```text
+Is this the best sum I've seen so far?
+
+        YES
+         ↓
+      Update max
+```
+
+So the complete mental model is:
+
+```text
+             Current Element
+                    │
+             ┌──────┴──────┐
+             │             │
+        Start Fresh    Extend Previous
+             │             │
+             └──────┬──────┘
+                    ↓
+              currentSum
+                    │
+                    ↓
+             Update maxSum
+```
+
+<table>
+<tr>
+<td width="42"><img src="https://api.iconify.design/lucide/flame.svg?color=%23f97316" width="24"></td>
+<td><b>FINAL CORE INSIGHT</b><br><br>
+Kadane is not really about "resetting a sum whenever it becomes negative."<br><br>
+It is about comparing two possibilities at every index:<br><br>
+<b>1. Start a new subarray here.</b><br>
+<b>2. Continue the best subarray from before.</b><br><br>
+That is the entire algorithm.
+</td>
+</tr>
+</table>
+
+---
+
+## One-Line Memory Trick
+
+```text
+BEST ENDING HERE → currentSum
+BEST SEEN SO FAR → maxSum
+```
+
+Or even shorter:
+
+```text
+KEEP THE USEFUL PREFIX.
+DROP THE HARMFUL PREFIX.
+TRACK THE GLOBAL BEST.
+```
+
+---
+
+## Quick Reference
 
 ```java
 class Solution {
-    public int maxSubarraySumCircular(int[] nums) {
-        int total = 0;
-        int curMax = 0, maxSum = nums[0];
-        int curMin = 0, minSum = nums[0];
+    public int maxSubArray(int[] nums) {
 
-        for (int x : nums) {
-            total += x;
-
-            curMax = Math.max(x, curMax + x);
-            maxSum = Math.max(maxSum, curMax);
-
-            curMin = Math.min(x, curMin + x);
-            minSum = Math.min(minSum, curMin);
-        }
-
-        if (maxSum < 0) return maxSum;     // all negative
-
-        return Math.max(maxSum, total - minSum);
-    }
-}
-```
-
-```text
-Time:  O(n)
-Space: O(1)
-```
-
-> 💡 **Tip:** `curMax = 0` initially is fine here because `max(x, 0 + x) = x` on the first step.
-
----
-
-# 🧩 Variation 4 — Maximum Product Subarray
-
-**LeetCode 152**
-
-Why is product harder than sum?
-
-```text
-Negative × Negative = Positive
-```
-
-A very **small (negative)** product can suddenly become the **largest** after meeting another negative.
-So we track **both** max and min.
-
-```text
-[2, 3, -2, 4]   → 6
-[-2, 3, -4]     → 24
-```
-
-## Java
-
-```java
-class Solution {
-    public int maxProduct(int[] nums) {
-        int curMax = nums[0];
-        int curMin = nums[0];
-        int ans = nums[0];
+        int currentSum = nums[0];
+        int maxSum = nums[0];
 
         for (int i = 1; i < nums.length; i++) {
-            int x = nums[i];
 
-            if (x < 0) {
-                int temp = curMax;   // negative flips max <-> min
-                curMax = curMin;
-                curMin = temp;
-            }
+            currentSum = Math.max(
+                nums[i],
+                currentSum + nums[i]
+            );
 
-            curMax = Math.max(x, curMax * x);
-            curMin = Math.min(x, curMin * x);
-
-            ans = Math.max(ans, curMax);
+            maxSum = Math.max(
+                maxSum,
+                currentSum
+            );
         }
 
-        return ans;
+        return maxSum;
     }
 }
 ```
 
-> 🔥 **Key insight:** A negative number **swaps** the roles of max and min.
-> A zero **resets** both automatically thanks to `Math.max(x, ...)` / `Math.min(x, ...)`.
-
----
-
-# 🧩 Variation 5 — Stock Buy/Sell as Kadane
-
-**LeetCode 121 — Best Time to Buy and Sell Stock**
-
-```text
-prices = [7, 1, 5, 3, 6, 4]
-daily differences = [-6, 4, -2, 3, -2]
-```
-
-Max profit = **maximum subarray sum of the differences**.
-
-```text
-4 + (-2) + 3 = 5
-```
-
-## Direct Kadane-style code
-
-```java
-class Solution {
-    public int maxProfit(int[] prices) {
-        int minPrice = prices[0];
-        int maxProfit = 0;
-
-        for (int i = 1; i < prices.length; i++) {
-            maxProfit = Math.max(maxProfit, prices[i] - minPrice);
-            minPrice = Math.min(minPrice, prices[i]);
-        }
-
-        return maxProfit;
-    }
-}
-```
-
-> 💡 **Tip:** Same spirit. "Best ending today" = `price − cheapest so far`.
-
----
-
-# 🧩 Variation 6 — Minimum Subarray Sum
-
-Just flip `max` ↔ `min`.
-
-```java
-int cur = nums[0], min = nums[0];
-for (int i = 1; i < nums.length; i++) {
-    cur = Math.min(nums[i], cur + nums[i]);
-    min = Math.min(min, cur);
-}
-```
-
-### Related: LeetCode 1749 — Max Absolute Sum of Any Subarray
-
-```text
-answer = max( maxKadane , abs(minKadane) )
-```
-
-> 🔥 Run both Kadane versions in **one loop**.
-
----
-
-# ⚔️ Kadane vs Sliding Window vs Two Pointers
-
-| Feature | Kadane | Sliding Window | Two Pointers |
-|---|---|---|---|
-| Handles negatives | ✅ Yes | ❌ Usually no | Depends |
-| Window size | Dynamic | Fixed / variable | Dynamic |
-| Core idea | Extend or restart | Add right, remove left | Move based on property |
-| Technique type | 1D DP | Window maintenance | Search-space elimination |
-| Typical problem | Max subarray | Max sum of size K | Pair sum on sorted array |
-
-```text
-Positive numbers only + target sum → Sliding Window
-Negatives + max sum contiguous     → Kadane
-Sorted + pairs                     → Two Pointers
-```
-
-> ⚠️ **Why sliding window fails with negatives:**
-> Adding an element no longer guarantees the sum grows, so you can't decide when to shrink the window.
-> Kadane doesn't need to shrink anything. It simply restarts.
-
----
-
-# 🧠 How to Approach a LeetCode/GFG Kadane Problem
-
-## Step 1 — Identify the ask
-```text
-Contiguous? Sum or product? Max or min? Circular? Need indices?
-```
-
-## Step 2 — Write the brute force
-```text
-for i in 0..n
-    for j in i..n
-        sum of nums[i..j]
-```
-`O(n²)`
-
-## Step 3 — Find the wasted work
-```text
-Recomputing sums of subarrays that start with a NEGATIVE prefix.
-```
-
-## Step 4 — Define the state in one sentence
-```text
-currentSum = best subarray sum ending at index i
-```
-If you can't say this sentence, stop and rethink.
-
-## Step 5 — Define the transition
-```text
-currentSum = max(nums[i], currentSum + nums[i])
-```
-
-## Step 6 — Define what you return
-```text
-maxSum (the best across ALL i), not just the last currentSum.
-```
-
-## Step 7 — Dry run a tiny array
-```text
-[-2, 1, -3, 4]
-```
-
-> 💡 **Tip:** The most common bug is returning `currentSum` instead of `maxSum`.
-
----
-
-# ⚡ Brute Force vs Kadane
-
-### Brute force
-
-```java
-int max = Integer.MIN_VALUE;
-for (int i = 0; i < n; i++) {
-    int sum = 0;
-    for (int j = i; j < n; j++) {
-        sum += nums[j];
-        max = Math.max(max, sum);
-    }
-}
-```
-
-```text
-Time: O(n²)   Space: O(1)
-```
-
-### Kadane
-
-```text
-Time: O(n)    Space: O(1)
-```
-
-> 🔥 For `n = 10⁵`, brute force does ~10¹⁰ operations (TLE). Kadane does ~10⁵.
-
----
-
-# ⏱️ Time and Space Complexity
-
-```text
-Time:  O(n)   → single pass
-Space: O(1)   → only 2 variables
-```
-
-If you use a `dp[]` array to explain the DP formulation:
-
-```text
-Space: O(n)  → but can be reduced to O(1)
-```
-
----
-
-# ⚠️ Common Mistakes
-
-## ❌ Mistake 1 — Initializing `max` to 0
-Breaks all-negative arrays.
-```text
-Use nums[0]  or  Integer.MIN_VALUE
-```
-
-## ❌ Mistake 2 — Returning `currentSum`
-```java
-return currentSum;   // ❌ gives the best subarray ENDING at last index
-return maxSum;       // ✅
-```
-
-## ❌ Mistake 3 — Forgetting to update `maxSum` every iteration
-`maxSum` must be updated **after every** `currentSum` update.
-
-## ❌ Mistake 4 — Using `Integer.MIN_VALUE` with addition
-```java
-int cur = Integer.MIN_VALUE;
-cur + x    // may overflow ⚠️
-```
-Initialize with `nums[0]` to avoid overflow.
-
-## ❌ Mistake 5 — Wrong circular logic for all-negative arrays
-`total − minSum` can equal `0` (empty subarray). Guard with `if (maxSum < 0)`.
-
-## ❌ Mistake 6 — Not swapping max/min in product Kadane
-A negative `x` must swap `curMax` and `curMin` **before** multiplying.
-
-## ❌ Mistake 7 — Updating `start` incorrectly (index version)
-Use `tempStart` and copy to `start` only on a new best.
-
-## ❌ Mistake 8 — Using Kadane for subsequences
-Kadane is **contiguous only**.
-
----
-
-# 🧪 Edge Cases Checklist
-
-```text
-[5]                       // single element
-[-5]                      // single negative
-[-3, -1, -2]              // all negative
-[1, 2, 3]                 // all positive → whole array
-[0, 0, 0]                 // all zeros
-[-1, 0, -2]               // zero is the best
-[5, -100, 5]              // restart is better than extend
-[1, -1, 1, -1]            // ties
-[Integer.MAX_VALUE, 1]    // overflow (use long if needed)
-large n (10^5)            // brute force TLE
-circular: all negative    // guard needed
-product: zeros + negatives
-```
-
-> 💡 **Tip:** If sums can be huge, use `long` for `currentSum` and `maxSum`.
-
----
-
-# 🏋️ Practice Roadmap
-
-## 🟢 Beginner
-
-| Problem | Platform | Pattern |
-|---|---|---|
-| Maximum Subarray (53) | LeetCode | Classic Kadane |
-| Kadane's Algorithm | GFG | Classic Kadane |
-| Best Time to Buy and Sell Stock (121) | LeetCode | Kadane / min-so-far |
-| Maximum Absolute Sum of Any Subarray (1749) | LeetCode | Max + Min Kadane |
-
-## 🟡 Intermediate
-
-| Problem | Platform | Pattern |
-|---|---|---|
-| Maximum Sum Circular Subarray (918) | LeetCode | Kadane + total − min |
-| Maximum Product Subarray (152) | LeetCode | Track max & min |
-| Longest Turbulent Subarray (978) | LeetCode | Kadane-style state |
-| Maximum Subarray Sum with One Deletion (1186) | LeetCode | Kadane + 2 states |
-
-## 🔴 Challenging
-
-```text
-363   Max Sum of Rectangle No Larger Than K   (2D Kadane + TreeSet)
-2321  Maximum Score Of Spliced Array           (Kadane on difference)
-1191  K-Concatenation Maximum Sum
-Max Sum Rectangle in a 2D Matrix              (2D Kadane)
-```
-
----
-
-# 🎯 Problem-Solving Checklist
-
-```text
-[ ] Is the subarray contiguous?
-[ ] Can numbers be negative?
-[ ] Am I maximizing or minimizing?
-[ ] Sum or product?
-[ ] Can I define "best ending at i"?
-[ ] Is an empty subarray allowed?
-[ ] Is the array circular?
-[ ] Do I need indices or just the value?
-[ ] Did I initialize with nums[0]?
-[ ] Do I return maxSum, not currentSum?
-[ ] Is overflow possible?
-[ ] Did I dry run on all-negative input?
-```
-
----
-
-# 🎤 Interview: 30-Second Answer
-
-> **Kadane's Algorithm finds the maximum sum contiguous subarray in O(n) time
-> and O(1) space. At each index we keep the best sum of a subarray ending
-> there, choosing between extending the previous subarray or starting fresh,
-> using `current = max(nums[i], current + nums[i])`. We track the global
-> maximum across all positions. It works because a negative prefix can never
-> help a future subarray. It's essentially 1D dynamic programming, and it
-> extends to circular arrays, product subarrays, and stock-profit problems.**
-
----
-
-# 🧠 Kadane Cheat Sheet
-
-```text
-┌──────────────────────────────────────────────┐
-│                  KADANE                       │
-├──────────────────────────────────────────────┤
-│ State                                         │
-│ → cur = best sum ENDING at i                  │
-│ → max = best sum anywhere                     │
-│                                               │
-│ Transition                                    │
-│ → cur = max(nums[i], cur + nums[i])           │
-│ → max = max(max, cur)                         │
-│                                               │
-│ Init                                          │
-│ → cur = max = nums[0]                         │
-│                                               │
-│ Min subarray                                  │
-│ → flip max ↔ min                              │
-│                                               │
-│ Circular                                      │
-│ → max(maxKadane, total − minKadane)           │
-│ → if maxKadane < 0 return maxKadane           │
-│                                               │
-│ Product                                       │
-│ → track curMax & curMin, swap on negative     │
-│                                               │
-│ Complexity                                    │
-│ → O(n) time, O(1) space                       │
-└──────────────────────────────────────────────┘
-```
-
----
-
-# 🔥 Final Mental Model
-
-```text
-Contiguous + optimize + negatives?
-        ↓
-Can I define "best ending here"?
-        ↓
-Does it depend only on the previous one?
-        ↓
-Extend or restart?
-        ↓
-Kadane ✅
-```
-
----
-
-# 💎 One-Line Memory Trick
-
-```text
-Kadane = At every step, ask: "Is my past helping me or hurting me?"
-         Helping → extend.   Hurting → drop it and restart.
-```
-
-> 💡 If you can explain **why a negative prefix gets dropped**, you truly understand Kadane.
+<table>
+<tr>
+<td width="42"><img src="https://api.iconify.design/lucide/book-open-check.svg?color=%2360a5fa" width="24"></td>
+<td><b>REVISION CHECK</b><br>
+If you can explain why <code>Math.max(nums[i], currentSum + nums[i])</code> is necessary without looking at the code, you understand Kadane's Algorithm.
+</td>
+</tr>
+</table>
